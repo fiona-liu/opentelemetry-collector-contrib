@@ -17,6 +17,7 @@ package redisreceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis/v7"
@@ -91,6 +92,7 @@ func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
 
 	rs.recordCommonMetrics(now, inf)
 	rs.recordKeyspaceMetrics(now, inf)
+	rs.recordCommandStatsMetrics(now, inf)
 
 	rs.mb.Emit(ilm.Metrics())
 
@@ -143,5 +145,25 @@ func (rs *redisScraper) recordKeyspaceMetrics(ts pdata.Timestamp, inf info) {
 		rs.mb.RecordRedisDbKeysDataPoint(ts, int64(keyspace.keys), keyspace.db)
 		rs.mb.RecordRedisDbExpiresDataPoint(ts, int64(keyspace.expires), keyspace.db)
 		rs.mb.RecordRedisDbAvgTTLDataPoint(ts, int64(keyspace.avgTTL), keyspace.db)
+	}
+}
+
+// recordCommandStatsMetrics records metrics from 'commandstats' Redis info key-value pairs,
+// e.g. "cmdstat_set:calls=1,usec=11,usec_per_call=11.00,rejected_calls=0,failed_calls=0".
+func (rs *redisScraper) recordCommandStatsMetrics(ts pdata.Timestamp, inf info) {
+	for infoKey, infoVal := range inf {
+		if strings.Contains(infoKey, "cmdstat") {
+			commandstat, parsingError := parseCommandstatString(infoKey, infoVal)
+			if parsingError != nil {
+				rs.settings.Logger.Warn("failed to parse commandstat string", zap.String("key", infoKey),
+					zap.String("val", infoVal), zap.Error(parsingError))
+				continue
+			}
+			rs.mb.RecordRedisCommandCallsDataPoint(ts, int64(commandstat.calls), commandstat.command)
+			rs.mb.RecordRedisCommandUsecDataPoint(ts, int64(commandstat.usec), commandstat.command)
+			rs.mb.RecordRedisCommandUsecPerCallDataPoint(ts, commandstat.usec_per_call, commandstat.command)
+			rs.mb.RecordRedisCommandRejectedCallsDataPoint(ts, int64(commandstat.rejected_calls), commandstat.command)
+			rs.mb.RecordRedisCommandFailedCallsDataPoint(ts, int64(commandstat.failed_calls), commandstat.command)
+		}
 	}
 }
