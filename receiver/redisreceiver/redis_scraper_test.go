@@ -37,8 +37,8 @@ func TestRedisRunnable(t *testing.T) {
 	require.NoError(t, err)
 	md, err := runner.Scrape(context.Background())
 	require.NoError(t, err)
-	// + 16 because there are two keyspace entries each of which has three metrics and two commandstats entries each of which has five metrcis
-	assert.Equal(t, len(rs.dataPointRecorders())+16, md.DataPointCount())
+	// + 6 because there are two keyspace entries each of which has three metrics
+	assert.Equal(t, len(rs.dataPointRecorders())+6, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.InstrumentationLibraryMetrics().At(0)
 	il := ilm.InstrumentationLibrary()

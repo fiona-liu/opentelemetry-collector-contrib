@@ -12,11 +12,6 @@ These are the metrics available for this scraper.
 | **redis.clients.connected** | Number of client connections (excluding connections from replicas) |  | Sum(Int) | <ul> </ul> |
 | **redis.clients.max_input_buffer** | Biggest input buffer among current client connections |  | Gauge(Int) | <ul> </ul> |
 | **redis.clients.max_output_buffer** | Longest output list among current client connections |  | Gauge(Int) | <ul> </ul> |
-| **redis.command.calls** | Number of calls reached command execution |  | Sum(Int) | <ul> <li>command</li> </ul> |
-| **redis.command.failed_calls** | Number of failed calls of command |  | Sum(Int) | <ul> <li>command</li> </ul> |
-| **redis.command.rejected_calls** | Number of rejected calls of command |  | Sum(Int) | <ul> <li>command</li> </ul> |
-| **redis.command.usec** | Total CPU time consumed by command | s | Sum(Int) | <ul> <li>command</li> </ul> |
-| **redis.command.usec_per_call** | Average CPU consumed per command execution | ms | Gauge(Double) | <ul> <li>command</li> </ul> |
 | **redis.commands** | Number of commands processed per second | {ops}/s | Gauge(Int) | <ul> </ul> |
 | **redis.commands.processed** | Total number of commands processed by the server |  | Sum(Int) | <ul> </ul> |
 | **redis.connections.received** | Total number of connections accepted by the server |  | Sum(Int) | <ul> </ul> |
@@ -56,6 +51,5 @@ metrics:
 
 | Name | Description |
 | ---- | ----------- |
-| command | Redis command identifier |
 | db | Redis database identifier |
 | state | Redis CPU usage state |

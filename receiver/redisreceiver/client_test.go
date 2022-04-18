@@ -58,10 +58,3 @@ func TestRetrieveInfo(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, strings.HasPrefix(res, "# Server"))
 }
-
-func TestRetrieveInfoCommandStates(t *testing.T) {
-	g := fakeClient{}
-	res, err := g.retrieveInfo()
-	require.Nil(t, err)
-	require.True(t, strings.Contains(res, "# Commandstats"))
-}

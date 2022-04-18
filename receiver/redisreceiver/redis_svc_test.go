@@ -28,7 +28,6 @@ func TestParser(t *testing.T) {
 	s := newFakeAPIParser()
 	info, err := s.info()
 	require.Nil(t, err)
-	require.Equal(t, 125, len(info))
+	require.Equal(t, 123, len(info))
 	require.Equal(t, "1.24", info["allocator_frag_ratio"]) // spot check
-	require.Equal(t, "calls=2,usec=4,usec_per_call=2.00,rejected_calls=0,failed_calls=0", info["cmdstat_get"]) // check commandstats
 }
