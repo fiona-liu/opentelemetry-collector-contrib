@@ -5,6 +5,8 @@ attributes:
     description: Redis CPU usage state
   db:
     description: Redis database identifier
+  command:
+    description: Redis command identifier
 
 metrics:
   redis.uptime:
@@ -244,3 +246,51 @@ metrics:
     gauge:
       value_type: int
     attributes: [db]
+
+  redis.command.calls:
+    enabled: true
+    description: "Number of calls reached command execution"
+    unit: ""
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [command]
+
+  redis.command.usec:
+    enabled: true
+    description: "Total CPU time consumed by command"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [command]
+
+  redis.command.usec_per_call:
+    enabled: true
+    description: "Average CPU consumed per command execution"
+    unit: ms
+    gauge:
+      value_type: double
+    attributes: [command]
+
+  redis.command.rejected_calls:
+    enabled: true
+    description: "Number of rejected calls of command"
+    unit: ""
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [command]
+
+  redis.command.failed_calls:
+    enabled: true
+    description: "Number of failed calls of command"
+    unit: ""
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation: cumulative
+    attributes: [command]

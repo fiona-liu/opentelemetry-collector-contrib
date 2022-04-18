@@ -39,6 +39,7 @@ func (p *redisSvc) info() (info, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	lines := strings.Split(str, p.delimiter)
 	attrs := make(map[string]string)
 	for _, line := range lines {

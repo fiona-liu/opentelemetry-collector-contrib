@@ -19,6 +19,11 @@ type MetricsSettings struct {
 	RedisClientsConnected                  MetricSettings `mapstructure:"redis.clients.connected"`
 	RedisClientsMaxInputBuffer             MetricSettings `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer            MetricSettings `mapstructure:"redis.clients.max_output_buffer"`
+	RedisCommandCalls                      MetricSettings `mapstructure:"redis.command.calls"`
+	RedisCommandFailedCalls                MetricSettings `mapstructure:"redis.command.failed_calls"`
+	RedisCommandRejectedCalls              MetricSettings `mapstructure:"redis.command.rejected_calls"`
+	RedisCommandUsec                       MetricSettings `mapstructure:"redis.command.usec"`
+	RedisCommandUsecPerCall                MetricSettings `mapstructure:"redis.command.usec_per_call"`
 	RedisCommands                          MetricSettings `mapstructure:"redis.commands"`
 	RedisCommandsProcessed                 MetricSettings `mapstructure:"redis.commands.processed"`
 	RedisConnectionsReceived               MetricSettings `mapstructure:"redis.connections.received"`
@@ -58,6 +63,21 @@ func DefaultMetricsSettings() MetricsSettings {
 			Enabled: true,
 		},
 		RedisClientsMaxOutputBuffer: MetricSettings{
+			Enabled: true,
+		},
+		RedisCommandCalls: MetricSettings{
+			Enabled: true,
+		},
+		RedisCommandFailedCalls: MetricSettings{
+			Enabled: true,
+		},
+		RedisCommandRejectedCalls: MetricSettings{
+			Enabled: true,
+		},
+		RedisCommandUsec: MetricSettings{
+			Enabled: true,
+		},
+		RedisCommandUsecPerCall: MetricSettings{
 			Enabled: true,
 		},
 		RedisCommands: MetricSettings{
@@ -331,6 +351,269 @@ func (m *metricRedisClientsMaxOutputBuffer) emit(metrics pdata.MetricSlice) {
 
 func newMetricRedisClientsMaxOutputBuffer(settings MetricSettings) metricRedisClientsMaxOutputBuffer {
 	m := metricRedisClientsMaxOutputBuffer{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisCommandCalls struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.command.calls metric with initial data.
+func (m *metricRedisCommandCalls) init() {
+	m.data.SetName("redis.command.calls")
+	m.data.SetDescription("Number of calls reached command execution")
+	m.data.SetUnit("")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricRedisCommandCalls) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Command, pdata.NewAttributeValueString(commandAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisCommandCalls) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisCommandCalls) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisCommandCalls(settings MetricSettings) metricRedisCommandCalls {
+	m := metricRedisCommandCalls{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisCommandFailedCalls struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.command.failed_calls metric with initial data.
+func (m *metricRedisCommandFailedCalls) init() {
+	m.data.SetName("redis.command.failed_calls")
+	m.data.SetDescription("Number of failed calls of command")
+	m.data.SetUnit("")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricRedisCommandFailedCalls) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Command, pdata.NewAttributeValueString(commandAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisCommandFailedCalls) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisCommandFailedCalls) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisCommandFailedCalls(settings MetricSettings) metricRedisCommandFailedCalls {
+	m := metricRedisCommandFailedCalls{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisCommandRejectedCalls struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.command.rejected_calls metric with initial data.
+func (m *metricRedisCommandRejectedCalls) init() {
+	m.data.SetName("redis.command.rejected_calls")
+	m.data.SetDescription("Number of rejected calls of command")
+	m.data.SetUnit("")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricRedisCommandRejectedCalls) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Command, pdata.NewAttributeValueString(commandAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisCommandRejectedCalls) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisCommandRejectedCalls) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisCommandRejectedCalls(settings MetricSettings) metricRedisCommandRejectedCalls {
+	m := metricRedisCommandRejectedCalls{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisCommandUsec struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.command.usec metric with initial data.
+func (m *metricRedisCommandUsec) init() {
+	m.data.SetName("redis.command.usec")
+	m.data.SetDescription("Total CPU time consumed by command")
+	m.data.SetUnit("s")
+	m.data.SetDataType(pdata.MetricDataTypeSum)
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pdata.MetricAggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricRedisCommandUsec) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntVal(val)
+	dp.Attributes().Insert(A.Command, pdata.NewAttributeValueString(commandAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisCommandUsec) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisCommandUsec) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisCommandUsec(settings MetricSettings) metricRedisCommandUsec {
+	m := metricRedisCommandUsec{settings: settings}
+	if settings.Enabled {
+		m.data = pdata.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisCommandUsecPerCall struct {
+	data     pdata.Metric   // data buffer for generated metric.
+	settings MetricSettings // metric settings provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.command.usec_per_call metric with initial data.
+func (m *metricRedisCommandUsecPerCall) init() {
+	m.data.SetName("redis.command.usec_per_call")
+	m.data.SetDescription("Average CPU consumed per command execution")
+	m.data.SetUnit("ms")
+	m.data.SetDataType(pdata.MetricDataTypeGauge)
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricRedisCommandUsecPerCall) recordDataPoint(start pdata.Timestamp, ts pdata.Timestamp, val float64, commandAttributeValue string) {
+	if !m.settings.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleVal(val)
+	dp.Attributes().Insert(A.Command, pdata.NewAttributeValueString(commandAttributeValue))
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisCommandUsecPerCall) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisCommandUsecPerCall) emit(metrics pdata.MetricSlice) {
+	if m.settings.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisCommandUsecPerCall(settings MetricSettings) metricRedisCommandUsecPerCall {
+	m := metricRedisCommandUsecPerCall{settings: settings}
 	if settings.Enabled {
 		m.data = pdata.NewMetric()
 		m.init()
@@ -1605,6 +1888,11 @@ type MetricsBuilder struct {
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
 	metricRedisClientsMaxOutputBuffer            metricRedisClientsMaxOutputBuffer
+	metricRedisCommandCalls                      metricRedisCommandCalls
+	metricRedisCommandFailedCalls                metricRedisCommandFailedCalls
+	metricRedisCommandRejectedCalls              metricRedisCommandRejectedCalls
+	metricRedisCommandUsec                       metricRedisCommandUsec
+	metricRedisCommandUsecPerCall                metricRedisCommandUsecPerCall
 	metricRedisCommands                          metricRedisCommands
 	metricRedisCommandsProcessed                 metricRedisCommandsProcessed
 	metricRedisConnectionsReceived               metricRedisConnectionsReceived
@@ -1649,6 +1937,11 @@ func NewMetricsBuilder(settings MetricsSettings, options ...metricBuilderOption)
 		metricRedisClientsConnected:                  newMetricRedisClientsConnected(settings.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(settings.RedisClientsMaxInputBuffer),
 		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(settings.RedisClientsMaxOutputBuffer),
+		metricRedisCommandCalls:                      newMetricRedisCommandCalls(settings.RedisCommandCalls),
+		metricRedisCommandFailedCalls:                newMetricRedisCommandFailedCalls(settings.RedisCommandFailedCalls),
+		metricRedisCommandRejectedCalls:              newMetricRedisCommandRejectedCalls(settings.RedisCommandRejectedCalls),
+		metricRedisCommandUsec:                       newMetricRedisCommandUsec(settings.RedisCommandUsec),
+		metricRedisCommandUsecPerCall:                newMetricRedisCommandUsecPerCall(settings.RedisCommandUsecPerCall),
 		metricRedisCommands:                          newMetricRedisCommands(settings.RedisCommands),
 		metricRedisCommandsProcessed:                 newMetricRedisCommandsProcessed(settings.RedisCommandsProcessed),
 		metricRedisConnectionsReceived:               newMetricRedisConnectionsReceived(settings.RedisConnectionsReceived),
@@ -1689,6 +1982,11 @@ func (mb *MetricsBuilder) Emit(metrics pdata.MetricSlice) {
 	mb.metricRedisClientsConnected.emit(metrics)
 	mb.metricRedisClientsMaxInputBuffer.emit(metrics)
 	mb.metricRedisClientsMaxOutputBuffer.emit(metrics)
+	mb.metricRedisCommandCalls.emit(metrics)
+	mb.metricRedisCommandFailedCalls.emit(metrics)
+	mb.metricRedisCommandRejectedCalls.emit(metrics)
+	mb.metricRedisCommandUsec.emit(metrics)
+	mb.metricRedisCommandUsecPerCall.emit(metrics)
 	mb.metricRedisCommands.emit(metrics)
 	mb.metricRedisCommandsProcessed.emit(metrics)
 	mb.metricRedisConnectionsReceived.emit(metrics)
@@ -1734,6 +2032,31 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxInputBufferDataPoint(ts pdata.Tim
 // RecordRedisClientsMaxOutputBufferDataPoint adds a data point to redis.clients.max_output_buffer metric.
 func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pdata.Timestamp, val int64) {
 	mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisCommandCallsDataPoint adds a data point to redis.command.calls metric.
+func (mb *MetricsBuilder) RecordRedisCommandCallsDataPoint(ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	mb.metricRedisCommandCalls.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
+}
+
+// RecordRedisCommandFailedCallsDataPoint adds a data point to redis.command.failed_calls metric.
+func (mb *MetricsBuilder) RecordRedisCommandFailedCallsDataPoint(ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	mb.metricRedisCommandFailedCalls.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
+}
+
+// RecordRedisCommandRejectedCallsDataPoint adds a data point to redis.command.rejected_calls metric.
+func (mb *MetricsBuilder) RecordRedisCommandRejectedCallsDataPoint(ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	mb.metricRedisCommandRejectedCalls.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
+}
+
+// RecordRedisCommandUsecDataPoint adds a data point to redis.command.usec metric.
+func (mb *MetricsBuilder) RecordRedisCommandUsecDataPoint(ts pdata.Timestamp, val int64, commandAttributeValue string) {
+	mb.metricRedisCommandUsec.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
+}
+
+// RecordRedisCommandUsecPerCallDataPoint adds a data point to redis.command.usec_per_call metric.
+func (mb *MetricsBuilder) RecordRedisCommandUsecPerCallDataPoint(ts pdata.Timestamp, val float64, commandAttributeValue string) {
+	mb.metricRedisCommandUsecPerCall.recordDataPoint(mb.startTime, ts, val, commandAttributeValue)
 }
 
 // RecordRedisCommandsDataPoint adds a data point to redis.commands metric.
@@ -1872,11 +2195,14 @@ func (mb *MetricsBuilder) Reset(options ...metricBuilderOption) {
 
 // Attributes contains the possible metric attributes that can be used.
 var Attributes = struct {
+	// Command (Redis command identifier)
+	Command string
 	// Db (Redis database identifier)
 	Db string
 	// State (Redis CPU usage state)
 	State string
 }{
+	"command",
 	"db",
 	"state",
 }
