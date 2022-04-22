@@ -60,5 +60,10 @@ func (c *redisClient) retrieveInfo() (string, error) {
 		return "", err
 	}
 
-	return strings.Join([]string{defaultInfo, commandstatsInfo}, c.delimiter()), nil
+	lantencystatsInfo, err := c.client.Info("latencystats").Result()
+	if err != nil {
+		return "", err
+	}
+
+	return strings.Join([]string{defaultInfo, commandstatsInfo, lantencystatsInfo}, c.delimiter()), nil
 }

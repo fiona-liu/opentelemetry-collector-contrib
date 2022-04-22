@@ -93,6 +93,7 @@ func (rs *redisScraper) Scrape(context.Context) (pdata.Metrics, error) {
 	rs.recordCommonMetrics(now, inf)
 	rs.recordKeyspaceMetrics(now, inf)
 	rs.recordCommandStatsMetrics(now, inf)
+	rs.recordLatencyStatsMetrics(now, inf)
 
 	rs.mb.Emit(ilm.Metrics())
 
@@ -164,6 +165,40 @@ func (rs *redisScraper) recordCommandStatsMetrics(ts pdata.Timestamp, inf info) 
 			rs.mb.RecordRedisCommandUsecPerCallDataPoint(ts, commandstat.usec_per_call, commandstat.command)
 			rs.mb.RecordRedisCommandRejectedCallsDataPoint(ts, int64(commandstat.rejected_calls), commandstat.command)
 			rs.mb.RecordRedisCommandFailedCallsDataPoint(ts, int64(commandstat.failed_calls), commandstat.command)
+		}
+	}
+}
+
+// recordLatencyStatsMetrics records metrics from 'LatencyStatsMetrics' Redis info key-value pairs,
+// e.g. "latency_percentiles_usec_info:p50=10.123,p99=110.234,p99.9=120.234".
+func (rs *redisScraper) recordLatencyStatsMetrics(ts pdata.Timestamp, inf info) {
+	keyPrefix := "latency_percentiles_usec_"
+	for infoKey, infoVal := range inf {
+		if (!strings.HasPrefix(infoKey, keyPrefix)) || len(infoKey) <= len(keyPrefix) {
+			continue
+		}
+		command := infoKey[len(keyPrefix):]
+		latencystats, parsingError := parseLatencystatsString(command, infoVal)
+		if parsingError != nil {
+			rs.settings.Logger.Warn("failed to parse latency stats string", zap.String("command", command),
+				zap.String("latencystats", infoVal), zap.Error(parsingError))
+			continue
+		}
+		for percentile, latency := range latencystats.stats {
+			switch percentile {
+			case "p50":
+				rs.mb.RecordRedisLatencystatP50DataPoint(ts, float64(latency), command)
+			case "p90":
+				rs.mb.RecordRedisLatencystatP90DataPoint(ts, float64(latency), command)
+			case "p99":
+				rs.mb.RecordRedisLatencystatP99DataPoint(ts, float64(latency), command)
+			case "p99.9":
+				rs.mb.RecordRedisLatencystatP999DataPoint(ts, float64(latency), command)
+			case "p99.99":
+				rs.mb.RecordRedisLatencystatP9999DataPoint(ts, float64(latency), command)
+			case "p100":
+				rs.mb.RecordRedisLatencystatP100DataPoint(ts, float64(latency), command)
+			}
 		}
 	}
 }

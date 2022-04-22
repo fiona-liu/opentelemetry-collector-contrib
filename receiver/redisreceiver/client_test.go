@@ -65,3 +65,10 @@ func TestRetrieveInfoCommandStats(t *testing.T) {
 	require.Nil(t, err)
 	require.True(t, strings.Contains(res, "# Commandstats"))
 }
+
+func TestRetrieveInfoLatencyStats(t *testing.T) {
+	g := fakeClient{}
+	res, err := g.retrieveInfo()
+	require.Nil(t, err)
+	require.True(t, strings.Contains(res, "# Latencystats"))
+}
