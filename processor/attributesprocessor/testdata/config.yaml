@@ -87,7 +87,15 @@ processors:
   attributes/hash:
     actions:
       - key: user.email
-        action: hash 
+        action: hash
+
+  # The following demonstrates appending to the value of an existing kay.
+  attributes/append:
+    actions:
+      - key: host.id
+        value: ":6379"
+        action: append
+
 
 
   # The following demonstrates excluding spans from this attributes processor.

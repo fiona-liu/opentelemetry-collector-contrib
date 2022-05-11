@@ -21,8 +21,9 @@ The supported actions are:
   to target keys specified in the rule. If a target key already exists, it will
   be overridden. Note: It behaves similar to the Span Processor `to_attributes`
   setting with the existing attribute as the source.
+- `append`: Appends value to the value of an existing key.
 
-For the actions `insert`, `update` and `upsert`,
+For the actions `append`, `insert`, `update` and `upsert`,
  - `key`  is required
  - one of `value`, `from_attribute` or `from_context` is required
  - `action` is required.

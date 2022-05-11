@@ -630,6 +630,52 @@ func TestAttributes_HashValue(t *testing.T) {
 	}
 }
 
+func TestAttributes_AppendValue(t *testing.T) {
+
+	testCases := []testCase{
+		// Ensure no changes to the span as there is no attributes map.
+		{
+			name:               "AppendNoAttributes",
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
+		},
+		// Ensure no changes to the span as the key does not exist.
+		{
+			name: "AppendKeyNoExist",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
+			},
+		},
+		// Ensure the attribute `host.id` is updated.
+		{
+			name: "AppendAttributes",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"host.id": pdata.NewAttributeValueString("12345"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"host.id": pdata.NewAttributeValueString("12345:6379"),
+			},
+		},
+	}
+
+	cfg := &Settings{
+		Actions: []ActionKeyValue{
+			{Key: "host.id", Action: APPEND, Value: ":6379"},
+		},
+	}
+
+	ap, err := NewAttrProc(cfg)
+	require.Nil(t, err)
+	require.NotNil(t, ap)
+
+	for _, tt := range testCases {
+		runIndividualTestCase(t, tt, ap)
+	}
+}
+
 func TestAttributes_FromAttributeNoChange(t *testing.T) {
 	tc := testCase{
 		name: "FromAttributeNoChange",

@@ -29,7 +29,7 @@ import (
 // Settings specifies the processor settings.
 type Settings struct {
 	// Actions specifies the list of attributes to act on.
-	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT}.
+	// The set of actions are {INSERT, UPDATE, UPSERT, DELETE, HASH, EXTRACT, APPEND}.
 	// This is a required field.
 	Actions []ActionKeyValue `mapstructure:"actions"`
 }
@@ -65,7 +65,7 @@ type ActionKeyValue struct {
 	FromContext string `mapstructure:"from_context"`
 
 	// Action specifies the type of action to perform.
-	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH}.
+	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH, APPEND}.
 	// Both lower case and upper case are supported.
 	// INSERT -  Inserts the key/value to attributes when the key does not exist.
 	//           No action is applied to attributes where the key already exists.
@@ -85,6 +85,8 @@ type ActionKeyValue struct {
 	// EXTRACT - Extracts values using a regular expression rule from the input
 	//           'key' to target keys specified in the 'rule'. If a target key
 	//           already exists, it will be overridden.
+	// APPEND  - Appends value to the value of an existing key. No action is applied
+	//           if key does not exist.
 	// This is a required field.
 	Action Action `mapstructure:"action"`
 }
@@ -134,6 +136,10 @@ const (
 	// 'key' to target keys specified in the 'rule'. If a target key already
 	// exists, it will be overridden.
 	EXTRACT Action = "extract"
+
+	// APPEND appends value to the value of an existing key. No action is applied
+	// if key does not exist.
+	APPEND Action = "append"
 )
 
 type attributeAction struct {
@@ -180,7 +186,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 		valueSourceCount := a.valueSourceCount()
 
 		switch a.Action {
-		case INSERT, UPDATE, UPSERT:
+		case APPEND, INSERT, UPDATE, UPSERT:
 			if valueSourceCount == 0 {
 				return nil, fmt.Errorf("error creating AttrProc. Either field \"value\", \"from_attribute\" or \"from_context\" setting must be specified for %d-th action", i)
 			}
@@ -272,6 +278,8 @@ func (ap *AttrProc) Process(ctx context.Context, attrs pdata.AttributeMap) {
 			hashAttribute(action, attrs)
 		case EXTRACT:
 			extractAttributes(action, attrs)
+		case APPEND:
+			appendAttributeValue(ctx, action, attrs)
 		}
 	}
 }
@@ -326,4 +334,17 @@ func extractAttributes(action attributeAction, attrs pdata.AttributeMap) {
 	for i := 1; i < len(matches); i++ {
 		attrs.UpsertString(action.AttrNames[i], matches[i])
 	}
+}
+
+func appendAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) {
+	inputVal, found := getSourceAttributeValue(ctx, action, attrs)
+	if !found || inputVal.Type() != pdata.AttributeValueTypeString {
+		return
+	}
+
+	curVal, exists := attrs.Get(action.Key)
+	if !exists || curVal.Type() != pdata.AttributeValueTypeString {
+		return
+	}
+	curVal.SetStringVal(curVal.StringVal() + inputVal.StringVal())
 }

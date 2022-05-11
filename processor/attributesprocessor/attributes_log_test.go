@@ -367,6 +367,62 @@ func TestLogAttributes_Hash(t *testing.T) {
 	}
 }
 
+func TestLogAttributes_Append(t *testing.T) {
+	testCases := []logTestCase{
+		// Ensure no changes to the span as there is no attributes map.
+		{
+			name:               "AppendNoAttributes",
+			inputAttributes:    map[string]pdata.AttributeValue{},
+			expectedAttributes: map[string]pdata.AttributeValue{},
+		},
+		// Ensure no changes to the span as the key does not exist.
+		{
+			name: "AppendKeyNoExist",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"boo": pdata.NewAttributeValueString("foo"),
+			},
+		},
+		// Ensure the attribute `host.id` is updated.
+		{
+			name: "AppendAttributes",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"host.id": pdata.NewAttributeValueString("12345"),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"host.id": pdata.NewAttributeValueString("12345:6379"),
+			},
+		},
+		// Ensure there is no change to attribute since it is not type string.
+		{
+			name: "AppendAttributes",
+			inputAttributes: map[string]pdata.AttributeValue{
+				"host.id": pdata.NewAttributeValueInt(1),
+			},
+			expectedAttributes: map[string]pdata.AttributeValue{
+				"host.id": pdata.NewAttributeValueInt(1),
+			},
+		},
+	}
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.Actions = []attraction.ActionKeyValue{
+		{Key: "host.id", Action: attraction.APPEND, Value: ":6379"},
+	}
+
+	tp, err := factory.CreateLogsProcessor(context.Background(), componenttest.NewNopProcessorCreateSettings(), cfg, consumertest.NewNop())
+	require.Nil(t, err)
+	require.NotNil(t, tp)
+
+	for _, tt := range testCases {
+		runIndividualLogTestCase(t, tt, tp)
+	}
+}
+
 func BenchmarkAttributes_FilterLogsByName(b *testing.B) {
 	testCases := []logTestCase{
 		{
