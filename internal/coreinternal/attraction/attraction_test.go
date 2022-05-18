@@ -982,3 +982,26 @@ func TestFromContext(t *testing.T) {
 		})
 	}
 }
+
+func TestAttributes_InsertFromJsonFile(t *testing.T) {
+	tc := testCase{
+		name:            "InsertFromJsonFile",
+		inputAttributes: map[string]pdata.AttributeValue{},
+		expectedAttributes: map[string]pdata.AttributeValue{
+			"kernel_version": pdata.NewAttributeValueString("Zeta"),
+		},
+	}
+
+	cfg := &Settings{
+		Actions: []ActionKeyValue{
+			{Key: "undefined", Action: INSERT, FromJsonFile: "../testdata/attributes.json"},
+			{Key: "kernel_version", Action: INSERT, FromJsonFile: "../testdata/attributes.json"},
+		},
+	}
+
+	ap, err := NewAttrProc(cfg)
+	require.Nil(t, err)
+	require.NotNil(t, ap)
+
+	runIndividualTestCase(t, tc, ap)
+}

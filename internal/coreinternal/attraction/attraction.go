@@ -16,7 +16,10 @@ package attraction // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
 
@@ -64,6 +67,9 @@ type ActionKeyValue struct {
 	// If the key has multiple values the values will be joined with `;` separator.
 	FromContext string `mapstructure:"from_context"`
 
+	// FromJsonFile specifies the JSON absolute filepath to retrieve the value from.
+	FromJsonFile string `mapstructure:"from_json_file"`
+
 	// Action specifies the type of action to perform.
 	// The set of values are {INSERT, UPDATE, UPSERT, DELETE, HASH, APPEND}.
 	// Both lower case and upper case are supported.
@@ -104,6 +110,11 @@ func (a *ActionKeyValue) valueSourceCount() int {
 	if a.FromContext != "" {
 		count++
 	}
+
+	if a.FromJsonFile != "" {
+		count++
+	}
+
 	return count
 }
 
@@ -146,6 +157,7 @@ type attributeAction struct {
 	Key           string
 	FromAttribute string
 	FromContext   string
+	FromJsonFile  string
 	// Compiled regex if provided
 	Regex *regexp.Regexp
 	// Attribute names extracted from the regexp's subexpressions.
@@ -208,6 +220,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 			} else {
 				action.FromAttribute = a.FromAttribute
 				action.FromContext = a.FromContext
+				action.FromJsonFile = a.FromJsonFile
 			}
 		case HASH, DELETE:
 			if valueSourceCount > 0 || a.RegexPattern != "" {
@@ -295,6 +308,32 @@ func getAttributeValueFromContext(ctx context.Context, key string) (pdata.Attrib
 	return pdata.NewAttributeValueString(strings.Join(vals, ";")), true
 }
 
+func getAttributeValueFromJsonFile(key, filepath string) (pdata.AttributeValue, bool) {
+	jsonFile, err := os.Open(filepath)
+	if err != nil {
+		return pdata.AttributeValue{}, false
+	}
+
+	defer jsonFile.Close()
+
+	content, err := ioutil.ReadAll(jsonFile)
+	if err != nil {
+		return pdata.AttributeValue{}, false
+	}
+
+	var result map[string]interface{}
+
+	if err = json.Unmarshal([]byte(content), &result); err != nil {
+		return pdata.AttributeValue{}, false
+	}
+
+	val := result[key]
+	if val == nil {
+		return pdata.AttributeValue{}, false
+	}
+	return pdata.NewAttributeValueString(fmt.Sprint(val)), true
+}
+
 func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs pdata.AttributeMap) (pdata.AttributeValue, bool) {
 	// Set the key with a value from the configuration.
 	if action.AttributeValue != nil {
@@ -303,6 +342,10 @@ func getSourceAttributeValue(ctx context.Context, action attributeAction, attrs 
 
 	if action.FromContext != "" {
 		return getAttributeValueFromContext(ctx, action.FromContext)
+	}
+
+	if action.FromJsonFile != "" {
+		return getAttributeValueFromJsonFile(action.Key, action.FromJsonFile)
 	}
 
 	return attrs.Get(action.FromAttribute)
