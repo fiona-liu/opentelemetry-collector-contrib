@@ -1,0 +1,72 @@
+name: redisclientreceiver
+
+attributes:
+  operation:
+    description: Redis DB operation
+  
+metrics:
+  redis.client.operation.opspersecond:
+    enabled: true
+    description: The number of operations per second in the last minute
+    unit: ""
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation: cumulative
+    attributes: [operation]
+
+  redis.client.operation.p50latency:
+    enabled: true
+    description: p50 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]
+    
+  redis.client.operation.p90latency:
+    enabled: true
+    description: p90 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]
+  
+  redis.client.operation.p95latency:
+    enabled: true
+    description: p95 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]
+  
+  redis.client.operation.p99latency:
+    enabled: true
+    description: p99 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]
+  
+  redis.client.operation.p99.9latency:
+    enabled: true
+    description: p99.90 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]
+  
+  redis.client.operation.p99.99latency:
+    enabled: true
+    description: p99.99 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]
+
+  redis.client.operation.p100latency:
+    enabled: true
+    description: p100 latency based on activity in the last minute
+    unit: ""
+    gauge:
+      value_type: double
+    attributes: [operation]

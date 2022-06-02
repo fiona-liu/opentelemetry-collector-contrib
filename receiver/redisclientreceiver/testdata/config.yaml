@@ -1,0 +1,13 @@
+receivers:
+  redisclient:
+    collection_interval: 10s
+    port: 8082
+exporters:
+  nop:
+service:
+  pipelines:
+    metrics:
+      receivers:
+        - redisclient
+      exporters:
+        - nop

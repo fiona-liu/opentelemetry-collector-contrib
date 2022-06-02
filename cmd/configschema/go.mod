@@ -740,6 +740,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ../../receiver/receivercreator
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisclientreceiver => ../../receiver/redisclientreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ../../receiver/redisreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver => ../../receiver/sapmreceiver

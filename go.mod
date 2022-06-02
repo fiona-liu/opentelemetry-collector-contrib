@@ -462,6 +462,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0 // indirect
+	gotest.tools/v3 v3.1.0 // indirect
 	k8s.io/api v0.23.4 // indirect
 	k8s.io/apimachinery v0.23.4 // indirect
 	k8s.io/client-go v0.23.4 // indirect
@@ -742,6 +743,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ./receiver/prometheusreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator => ./receiver/receivercreator
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisclientreceiver => ./receiver/redisclientreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver => ./receiver/redisreceiver
 
